@@ -1,3 +1,7 @@
+/**
+ * BottomNav — Floating bottom nav dengan FAB cutout di tengah
+ * Design: dua pill terpisah kiri-kanan, FAB menonjol di tengah
+ */
 import React from "react";
 import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,106 +24,128 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({
   tabs, activeKey, onTabPress, onFabPress, showFab = true,
 }) => {
-  // Split tabs around FAB
-  const half = Math.floor(tabs.length / 2);
-  const leftTabs = tabs.slice(0, half);
-  const rightTabs = tabs.slice(half);
+  const half       = Math.floor(tabs.length / 2);
+  const leftTabs   = tabs.slice(0, half);
+  const rightTabs  = tabs.slice(half);
 
   return (
-    <View style={styles.wrapper}>
-      <View style={styles.container}>
-        {/* Left tabs */}
-        <View style={styles.side}>
-          {leftTabs.map(tab => (
-            <NavTabItem key={tab.key} tab={tab} active={activeKey === tab.key} onPress={() => onTabPress(tab.key)} />
-          ))}
-        </View>
+    <View style={S.wrapper}>
+      {/* Kiri */}
+      <View style={S.sideBar}>
+        {leftTabs.map(tab => (
+          <TabItem
+            key={tab.key} tab={tab}
+            active={activeKey === tab.key}
+            onPress={() => onTabPress(tab.key)}
+          />
+        ))}
+      </View>
 
-        {/* FAB center */}
+      {/* FAB di tengah */}
+      <View style={S.fabArea}>
         {showFab && (
-          <View style={styles.fabWrapper}>
-            <TouchableOpacity style={styles.fab} onPress={onFabPress} activeOpacity={0.85}>
-              <Ionicons name="add" size={28} color={Colors.white} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={S.fab} onPress={onFabPress} activeOpacity={0.85}>
+            <Ionicons name="add" size={30} color={Colors.white} />
+          </TouchableOpacity>
         )}
+      </View>
 
-        {/* Right tabs */}
-        <View style={styles.side}>
-          {rightTabs.map(tab => (
-            <NavTabItem key={tab.key} tab={tab} active={activeKey === tab.key} onPress={() => onTabPress(tab.key)} />
-          ))}
-        </View>
+      {/* Kanan */}
+      <View style={S.sideBar}>
+        {rightTabs.map(tab => (
+          <TabItem
+            key={tab.key} tab={tab}
+            active={activeKey === tab.key}
+            onPress={() => onTabPress(tab.key)}
+          />
+        ))}
       </View>
     </View>
   );
 };
 
-function NavTabItem({ tab, active, onPress }: { tab: NavTab; active: boolean; onPress: () => void }) {
+function TabItem({ tab, active, onPress }: { tab: NavTab; active: boolean; onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.tab} onPress={onPress} activeOpacity={0.7}>
-      {active && <View style={styles.activeDot} />}
+    <TouchableOpacity style={S.tab} onPress={onPress} activeOpacity={0.7}>
+      {active && <View style={S.dot} />}
       <Ionicons
         name={(active ? tab.icon : `${tab.icon}-outline`) as any}
         size={22}
         color={active ? Colors.primary : Colors.textMuted}
       />
-      <Text style={[styles.tabLabel, active && { color: Colors.primary }]}>{tab.label}</Text>
+      <Text style={[S.label, active && S.labelActive]}>{tab.label}</Text>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
+const FAB_SIZE = 54;
+
+const S = StyleSheet.create({
   wrapper: {
+    flexDirection: "row",
+    alignItems: "flex-end",
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
     backgroundColor: "transparent",
   },
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.white,
-    borderRadius: Radius.xxl,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    ...Shadow.md,
-  },
-  side: {
+
+  // Dua pill kiri dan kanan
+  sideBar: {
     flex: 1,
     flexDirection: "row",
     justifyContent: "space-around",
-  },
-  tab: {
     alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-    minWidth: 48,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.full,
+    height: 60,
+    paddingHorizontal: Spacing.sm,
+    ...Shadow.md,
   },
-  tabLabel: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.medium,
-  },
-  activeDot: {
-    position: "absolute",
-    top: -4,
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: Colors.primary,
-  },
-  fabWrapper: {
-    width: 64,
+
+  // Area FAB di tengah — tidak ada background
+  fabArea: {
+    width: FAB_SIZE + Spacing.xl,
     alignItems: "center",
-    marginTop: -28,
+    justifyContent: "flex-end",
+    paddingBottom: 4,
   },
+
+  // FAB button
   fab: {
-    width: 56,
-    height: 56,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
     borderRadius: Radius.full,
     backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
     ...Shadow.lg,
+    // Sedikit naik dari bar
+    marginBottom: 8,
+  },
+
+  // Tab item
+  tab: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    paddingVertical: Spacing.xs,
+    minWidth: 44,
+  },
+  dot: {
+    position: "absolute",
+    top: 2,
+    width: 5,
+    height: 5,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
+  },
+  label: {
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
+    fontWeight: Typography.medium,
+  },
+  labelActive: {
+    color: Colors.primary,
+    fontWeight: Typography.semibold,
   },
 });

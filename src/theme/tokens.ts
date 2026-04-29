@@ -120,3 +120,23 @@ export const getReasonColor = (reason: number): string => {
     default: return Colors.callOthers;
   }
 };
+
+export const Gradients = {
+  primary:     ["#7B6FE8", "#5A4FD1"] as string[],
+  primaryBlue: ["#7B6FE8", "#2563EB"] as string[],
+  secondary:   ["#4DD9C0", "#06B6D4"] as string[],
+  sunset:      ["#FF6B6B", "#EC4899"] as string[],
+  golden:      ["#FFB800", "#F97316"] as string[],
+  forest:      ["#00C48C", "#10B981"] as string[],
+  dark:        ["#1A1A2E", "#2D3561"] as string[],
+} as const;
+
+export const IllustrationColors = {
+  skin:       "#FDBCB4",
+  hair:       "#2D2D2D",
+  shirt:      "#7B6FE8",
+  pants:      "#2D3561",
+  laptop:     "#4DD9C0",
+  chart:      "#FFB800",
+  background: "#EAE8FC",
+} as const;
