@@ -30,36 +30,42 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <View style={S.wrapper}>
-      {/* Kiri */}
-      <View style={S.sideBar}>
-        {leftTabs.map(tab => (
-          <TabItem
-            key={tab.key} tab={tab}
-            active={activeKey === tab.key}
-            onPress={() => onTabPress(tab.key)}
-          />
-        ))}
+      {/* Background Bar */}
+      <View style={S.barBackground}>
+        {/* Kiri */}
+        <View style={S.sideItems}>
+          {leftTabs.map(tab => (
+            <TabItem
+              key={tab.key} tab={tab}
+              active={activeKey === tab.key}
+              onPress={() => onTabPress(tab.key)}
+            />
+          ))}
+        </View>
+
+        {/* Space for FAB */}
+        <View style={S.fabSpacer} />
+
+        {/* Kanan */}
+        <View style={S.sideItems}>
+          {rightTabs.map(tab => (
+            <TabItem
+              key={tab.key} tab={tab}
+              active={activeKey === tab.key}
+              onPress={() => onTabPress(tab.key)}
+            />
+          ))}
+        </View>
       </View>
 
-      {/* FAB di tengah */}
-      <View style={S.fabArea}>
-        {showFab && (
+      {/* Floating FAB */}
+      {showFab && (
+        <View style={S.fabContainer}>
           <TouchableOpacity style={S.fab} onPress={onFabPress} activeOpacity={0.85}>
-            <Ionicons name="add" size={30} color={Colors.white} />
+            <Text style={S.fabText}>FAB +</Text>
           </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Kanan */}
-      <View style={S.sideBar}>
-        {rightTabs.map(tab => (
-          <TabItem
-            key={tab.key} tab={tab}
-            active={activeKey === tab.key}
-            onPress={() => onTabPress(tab.key)}
-          />
-        ))}
-      </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -78,58 +84,70 @@ function TabItem({ tab, active, onPress }: { tab: NavTab; active: boolean; onPre
   );
 }
 
-const FAB_SIZE = 54;
+const FAB_SIZE = 56;
 
 const S = StyleSheet.create({
   wrapper: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
-    backgroundColor: "transparent",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 90,
+    justifyContent: "flex-end",
   },
-
-  // Dua pill kiri dan kanan
-  sideBar: {
+  barBackground: {
+    flexDirection: "row",
+    backgroundColor: Colors.white,
+    height: 65,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: Spacing.md,
+    alignItems: "center",
+    ...Shadow.lg,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  sideItems: {
     flex: 1,
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    backgroundColor: Colors.white,
-    borderRadius: Radius.full,
-    height: 60,
-    paddingHorizontal: Spacing.sm,
-    ...Shadow.md,
   },
-
-  // Area FAB di tengah — tidak ada background
-  fabArea: {
-    width: FAB_SIZE + Spacing.xl,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingBottom: 4,
+  fabSpacer: {
+    width: FAB_SIZE + 10,
   },
-
-  // FAB button
+  fabContainer: {
+    position: "absolute",
+    alignSelf: "center",
+    bottom: 25,
+    zIndex: 10,
+  },
   fab: {
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1E293B',
     justifyContent: "center",
     alignItems: "center",
     ...Shadow.lg,
-    // Sedikit naik dari bar
-    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
   },
-
-  // Tab item
+  fabText: {
+    color: Colors.white,
+    fontWeight: Typography.bold,
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
   tab: {
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
     paddingVertical: Spacing.xs,
-    minWidth: 44,
+    minWidth: 50,
   },
   dot: {
     position: "absolute",
@@ -140,12 +158,12 @@ const S = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   label: {
-    fontSize: Typography.xs,
+    fontSize: 9,
     color: Colors.textMuted,
     fontWeight: Typography.medium,
   },
   labelActive: {
     color: Colors.primary,
-    fontWeight: Typography.semibold,
+    fontWeight: Typography.bold,
   },
 });

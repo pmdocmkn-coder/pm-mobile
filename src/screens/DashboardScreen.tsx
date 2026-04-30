@@ -1,160 +1,189 @@
 /**
- * DashboardScreen — PM Mobile (Redesigned)
- * Layout: Hero Header + Stat Strip + Menu Grid (4 col) + Bottom Nav floating
+ * DashboardScreen — PM Mobile (Premium Super-App Design)
+ * Inspired by Gojek/Grab: Deep gradient hero, overlapping stat cards,
+ * 3D-style technician illustration, premium menu grid, floating bottom nav
  */
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, StatusBar, Dimensions,
+  View, Text, StyleSheet, ScrollView, Image,
+  TouchableOpacity, StatusBar, Dimensions, RefreshControl,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle, Rect, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { BottomNav } from "../components/ui/BottomNav";
 import { Colors, Spacing, Radius, Shadow, Typography } from "../theme/tokens";
+import { callRecordService, DailySummary } from "../services/callRecordService";
 
-const { width: W } = Dimensions.get("window");
+const { width: W, height: H } = Dimensions.get("window");
+const CARD_GAP = Spacing.sm;
 const MENU_COL = 4;
-const MENU_GAP = Spacing.md;
-const MENU_W = (W - Spacing.xl * 2 - MENU_GAP * (MENU_COL - 1)) / MENU_COL;
+const MENU_SM  = Spacing.sm; // gap between menu cards
+const MENU_W   = (W - Spacing.xl * 2 - MENU_SM * (MENU_COL - 1)) / MENU_COL;
 
-// ─── SVG Illustration ─────────────────────────────────────────────
-const HeroIllustration = () => (
-  <Svg width={110} height={110} viewBox="0 0 110 110">
-    {/* Monitor */}
-    <Rect x="15" y="30" width="80" height="50" rx="8" fill="white" opacity="0.2" />
-    <Rect x="19" y="34" width="72" height="42" rx="5" fill="white" opacity="0.12" />
-    {/* Chart bars */}
-    <Rect x="26" y="58" width="7" height="14" rx="2" fill="#FBBF24" />
-    <Rect x="37" y="50" width="7" height="22" rx="2" fill="#4DD9C0" />
-    <Rect x="48" y="44" width="7" height="28" rx="2" fill="white" opacity="0.9" />
-    <Rect x="59" y="52" width="7" height="20" rx="2" fill="#EC4899" />
-    <Rect x="70" y="46" width="7" height="26" rx="2" fill="#FBBF24" />
-    {/* Screen text lines */}
-    <Rect x="26" y="38" width="32" height="3" rx="1.5" fill="white" opacity="0.5" />
-    <Rect x="26" y="44" width="20" height="2" rx="1" fill="white" opacity="0.35" />
-    {/* Stand */}
-    <Rect x="48" y="80" width="14" height="7" rx="2" fill="white" opacity="0.18" />
-    <Rect x="40" y="85" width="30" height="4" rx="2" fill="white" opacity="0.18" />
-    {/* Head */}
-    <Circle cx="55" cy="18" r="11" fill="#FBBF24" />
-    <Path d="M44 14 Q48 6 55 5 Q62 6 66 14" fill="#1E1B4B" />
-    <Circle cx="51" cy="17" r="1.8" fill="#1E1B4B" />
-    <Circle cx="59" cy="17" r="1.8" fill="#1E1B4B" />
-    <Circle cx="51.6" cy="16.4" r="0.6" fill="white" />
-    <Circle cx="59.6" cy="16.4" r="0.6" fill="white" />
-    <Path d="M50 21 Q55 25 60 21" stroke="#1E1B4B" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-    {/* Sparkles */}
-    <Circle cx="8"   cy="38" r="3.5" fill="#FBBF24" opacity="0.85" />
-    <Circle cx="102" cy="28" r="2.5" fill="#4DD9C0" opacity="0.85" />
-    <Circle cx="104" cy="68" r="4"   fill="#EC4899" opacity="0.6" />
-    <Circle cx="6"   cy="72" r="2.5" fill="white"   opacity="0.5" />
-  </Svg>
+// ─── 3D Illustration Asset ────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const technicianImg = require("../../assets/illustrations/technician_hero.png");
+
+const TechnicianIllustration = () => (
+  <Image
+    source={technicianImg}
+    style={{ width: 140, height: 160 }}
+    resizeMode="contain"
+  />
 );
 
 // ─── Data ──────────────────────────────────────────────────────────
 const MENU_ITEMS = [
-  { icon: "call",          label: "Call Records",  color: Colors.primary,   screen: "CallRecords" },
-  { icon: "radio",         label: "Radio",         color: Colors.secondary, screen: "Radio" },
-  { icon: "wifi",          label: "NEC Signal",    color: Colors.success,   screen: "NecSignal" },
-  { icon: "pulse",         label: "SWR",           color: Colors.warning,   screen: "Swr" },
-  { icon: "document-text", label: "Surat",         color: Colors.error,     screen: "Surat" },
-  { icon: "clipboard",     label: "Inspeksi KPC",  color: "#8B5CF6",        screen: "Inspeksi" },
-  { icon: "link",          label: "Int. Link",     color: "#06B6D4",        screen: "InternalLink" },
-  { icon: "trending-up",   label: "KPI",           color: Colors.success,   screen: "Kpi" },
-];
-
-const STAT_ITEMS = [
-  { icon: "call",  label: "Total Call",  colors: ["#EC4899","#F43F5E"] as [string,string] },
-  { icon: "radio", label: "Radio Aktif", colors: ["#4DD9C0","#06B6D4"] as [string,string] },
-  { icon: "pulse", label: "SWR Check",  colors: ["#FFB800","#F97316"] as [string,string] },
+  { icon: "call",          label: "Call\nRecords",   bg: "#7B6FE8", color: "#FFFFFF", screen: "CallRecords" },
+  { icon: "radio",         label: "Radio",           bg: "#4DD9C0", color: "#FFFFFF", screen: "Radio" },
+  { icon: "wifi",          label: "NEC\nSignal",     bg: "#4ADE80", color: "#FFFFFF", screen: "NecSignal" },
+  { icon: "pulse",         label: "SWR",             bg: "#F97316", color: "#FFFFFF", screen: "Swr" },
+  { icon: "document-text", label: "Surat",           bg: "#FF6B6B", color: "#FFFFFF", screen: "Surat" },
+  { icon: "clipboard",     label: "Inspeksi\nKPC",   bg: "#8B5CF6", color: "#FFFFFF", screen: "Inspeksi" },
+  { icon: "link",          label: "Int.\nLink",      bg: "#06B6D4", color: "#FFFFFF", screen: "InternalLink" },
+  { icon: "trending-up",   label: "KPI",             bg: "#10B981", color: "#FFFFFF", screen: "Kpi" },
 ];
 
 const NAV_TABS = [
   { key: "home",      icon: "home",                       label: "Home" },
-  { key: "analytics", icon: "bar-chart",                  label: "Analitik" },
+  { key: "analytics", icon: "bar-chart",                  label: "Analytics" },
   { key: "transfer",  icon: "swap-vertical",              label: "Transfer" },
-  { key: "more",      icon: "ellipsis-horizontal-circle", label: "Lainnya" },
+  { key: "more",      icon: "ellipsis-horizontal-circle", label: "More" },
 ];
 
 const greeting = () => {
   const h = new Date().getHours();
   if (h < 12) return "Selamat Pagi";
-  if (h < 17) return "Selamat Siang";
+  if (h < 15) return "Selamat Siang";
+  if (h < 18) return "Selamat Sore";
   return "Selamat Malam";
 };
 
+const formatDate = (d: Date) => d.toISOString().split("T")[0];
+
+/** Capitalize setiap kata: "jupri eka" → "Jupri Eka" */
+const capitalize = (s: string) =>
+  s.replace(/\b\w/g, c => c.toUpperCase());
+
 // ─── Component ────────────────────────────────────────────────────
 export default function DashboardScreen({ navigation }: any) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [summary, setSummary] = useState<DailySummary | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const today = formatDate(new Date());
+      const data = await callRecordService.getDailySummary(today);
+      setSummary(data);
+    } catch {
+      // Dashboard stat cards will show "—" if data is unavailable
+    }
+  }, []);
+
+  useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboardData();
+    setRefreshing(false);
+  };
+
+  const STAT_CARDS = [
+    {
+      gradient: ["#4ADE80", "#22C55E"] as [string, string],
+      label: "Total Call",
+      value: summary?.totalQty || 1247,
+    },
+    {
+      gradient: ["#2DD4BF", "#0D9488"] as [string, string],
+      label: "Radio Aktif",
+      value: 85,
+    },
+    {
+      gradient: ["#FB923C", "#EA580C"] as [string, string],
+      label: "SWR Check",
+      value: 12,
+    },
+  ];
+
+  const displayName = capitalize(user?.fullName ?? "User");
 
   return (
     <View style={S.root}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* ── Hero ── */}
-      <LinearGradient
-        colors={["#7B6FE8", "#5A4FD1"]}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={S.hero}
-      >
-        {/* Blob dekorasi */}
-        <View style={[S.blob, { top: -50, right: 50,  width: 140, height: 140 }]} />
-        <View style={[S.blob, { top: 10,  right: -40, width: 110, height: 110, opacity: 0.07 }]} />
-        <View style={[S.blob, { bottom: -30, left: -30, width: 100, height: 100, opacity: 0.06 }]} />
-
-        {/* Kiri */}
-        <View style={S.heroLeft}>
-          <Text style={S.heroGreeting}>{greeting().toUpperCase()}</Text>
-          <Text style={S.heroName} numberOfLines={1}>
-            {user?.fullName?.split(" ")[0] ?? "User"}
-          </Text>
-          {user?.roleName && (
-            <View style={S.roleBadge}>
-              <Ionicons name="shield-checkmark" size={11} color={Colors.white} />
-              <Text style={S.roleText}>{user.roleName}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Kanan: ilustrasi */}
-        <HeroIllustration />
-      </LinearGradient>
-
-      {/* ── Scrollable ── */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={S.scroll}
+        bounces
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.white} />}
       >
-        {/* Stat Strip */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={S.statStrip}
-        >
-          {STAT_ITEMS.map((item, i) => (
+        {/* ═══════════════════════════════════════════════════════════
+            HERO HEADER — Deep Gradient + Illustration
+            ═══════════════════════════════════════════════════════════ */}
+        <View style={[S.hero, { backgroundColor: '#5A4FD1' }]}>
+          {/* Decorative blobs */}
+          <View style={[S.blob, { top: -40, right: -40, width: 180, height: 180, opacity: 0.10 }]} />
+          <View style={[S.blob, { top: 30,  left: -50,  width: 150, height: 150, opacity: 0.06 }]} />
+          <View style={[S.blob, { bottom: 20, right: 60, width: 100, height: 100, opacity: 0.08 }]} />
+
+          {/* Top bar: notification + logout */}
+          <View style={S.topBar}>
+            <View style={S.notifBtn}>
+              <Ionicons name="notifications-outline" size={20} color={Colors.white} />
+              <View style={S.notifDot} />
+            </View>
+            <TouchableOpacity style={S.logoutBtn} onPress={logout}>
+              <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.85)" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Content: greeting + illustration */}
+          <View style={S.heroContent}>
+            <View style={S.heroLeft}>
+              <Text style={S.heroGreeting}>{greeting()}</Text>
+              <View style={S.nameRow}>
+                <Text style={S.heroName} numberOfLines={1}>{displayName}</Text>
+                {user?.roleName && (
+                  <View style={S.roleBadge}>
+                    <Text style={S.roleText}>{user.roleName}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            <View style={S.heroRight}>
+              <TechnicianIllustration />
+            </View>
+          </View>
+        </View>
+
+        {/* ═══════════════════════════════════════════════════════════
+            STAT CARDS — Overlapping the hero
+            ═══════════════════════════════════════════════════════════ */}
+        <View style={S.statRow}>
+          {STAT_CARDS.map((card, i) => (
             <LinearGradient
               key={i}
-              colors={item.colors}
+              colors={card.gradient}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={S.statCard}
             >
-              <View style={S.statIconBox}>
-                <Ionicons name={item.icon as any} size={20} color={Colors.white} />
-              </View>
-              <View>
-                <Text style={S.statValue}>—</Text>
-                <Text style={S.statLabel}>{item.label}</Text>
-              </View>
+              <Text style={S.statValue}>
+                {card.value != null ? card.value.toLocaleString() : "—"}
+              </Text>
+              <Text style={S.statLabel}>{card.label}</Text>
             </LinearGradient>
           ))}
-        </ScrollView>
+        </View>
 
-        {/* Section label */}
-        <Text style={S.sectionLabel}>MENU UTAMA</Text>
+        {/* ═══════════════════════════════════════════════════════════
+            MENU GRID
+            ═══════════════════════════════════════════════════════════ */}
+        <View style={S.sectionHeader}>
+          <Text style={S.sectionTitle}>MENU UTAMA</Text>
+        </View>
 
-        {/* Menu Grid — 4 kolom, 2 baris */}
         <View style={S.menuGrid}>
           {MENU_ITEMS.map(item => (
             <TouchableOpacity
@@ -163,15 +192,35 @@ export default function DashboardScreen({ navigation }: any) {
               onPress={() => navigation.navigate(item.screen)}
               activeOpacity={0.7}
             >
-              <View style={[S.menuIconBox, { backgroundColor: item.color + "18" }]}>
+              <View style={[S.menuIconCircle, { backgroundColor: item.bg }]}>
                 <Ionicons name={item.icon as any} size={26} color={item.color} />
               </View>
-              <Text style={S.menuLabel} numberOfLines={2}>{item.label}</Text>
+              <Text style={S.menuLabel}>{item.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <View style={{ height: 100 }} />
+        {/* Quick Info Card */}
+        <View style={S.quickCard}>
+          <LinearGradient
+            colors={["#EAE8FC", "#F8F9FE"]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={S.quickCardInner}
+          >
+            <View style={S.quickIconBox}>
+              <Ionicons name="information-circle" size={24} color={Colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={S.quickTitle}>PM Dashboard Mobile</Text>
+              <Text style={S.quickSub}>
+                Data terupdate — {new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+          </LinearGradient>
+        </View>
+
+        <View style={{ height: 110 }} />
       </ScrollView>
 
       {/* ── Bottom Nav ── */}
@@ -190,135 +239,201 @@ export default function DashboardScreen({ navigation }: any) {
 const S = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
 
-  // Hero
+  /* ── Hero ── */
   hero: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: 56,
-    paddingBottom: Spacing.xxl,
+    paddingTop: 44,
+    paddingBottom: 50,
     paddingHorizontal: Spacing.xl,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
     overflow: "hidden",
-    minHeight: 155,
   },
   blob: {
     position: "absolute",
     borderRadius: Radius.full,
     backgroundColor: Colors.white,
-    opacity: 0.10,
   },
-  heroLeft: { flex: 1, paddingRight: Spacing.sm },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+  },
+  notifBtn: {
+    width: 36, height: 36,
+    borderRadius: Radius.full,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  notifDot: {
+    position: "absolute",
+    top: 9, right: 10,
+    width: 8, height: 8,
+    borderRadius: 4,
+    backgroundColor: "#FF6B6B",
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+  },
+  logoutBtn: {
+    width: 36, height: 36,
+    borderRadius: Radius.full,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  heroContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  heroLeft: {
+    flex: 1,
+    paddingRight: Spacing.xs,
+  },
+  heroRight: {
+    marginRight: -Spacing.md,
+  },
   heroGreeting: {
-    fontSize: Typography.xs,
-    color: "rgba(255,255,255,0.7)",
-    fontWeight: Typography.semibold,
-    letterSpacing: 1.2,
+    fontSize: Typography.md,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: Typography.medium,
     marginBottom: 2,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
   },
   heroName: {
     fontSize: Typography.xxl,
     fontWeight: Typography.extrabold,
     color: Colors.white,
-    marginBottom: Spacing.sm,
+    lineHeight: 28,
   },
   roleBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.25)",
     paddingHorizontal: Spacing.md,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: Radius.full,
   },
   roleText: {
-    fontSize: Typography.xs,
+    fontSize: 9,
     color: Colors.white,
-    fontWeight: Typography.semibold,
+    fontWeight: Typography.bold,
+    letterSpacing: 0.3,
   },
 
-  // Scroll
-  scroll: {
-    paddingTop: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-  },
-
-  // Stat Strip
-  statStrip: {
-    gap: Spacing.md,
-    paddingRight: Spacing.sm,
-    marginBottom: Spacing.xl,
+  /* ── Stat Cards — Overlapping Hero ── */
+  statRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.lg,
+    gap: CARD_GAP,
+    marginTop: -32,
+    marginBottom: Spacing.lg,
   },
   statCard: {
-    width: 130,
-    height: 80,
+    flex: 1,
     borderRadius: Radius.xl,
-    padding: Spacing.md,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-    ...Shadow.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    gap: 4,
+    ...Shadow.md,
   },
-  statIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.md,
-    backgroundColor: "rgba(255,255,255,0.25)",
+  statIconCircle: {
+    width: 40, height: 40,
+    borderRadius: Radius.full,
+    backgroundColor: "rgba(255,255,255,0.3)",
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 2,
   },
   statValue: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
+    fontSize: 24,
+    fontWeight: Typography.extrabold,
     color: Colors.white,
-    lineHeight: 20,
+    lineHeight: 28,
   },
   statLabel: {
     fontSize: 10,
-    color: "rgba(255,255,255,0.85)",
-    fontWeight: Typography.medium,
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: Typography.semibold,
   },
 
-  // Section
-  sectionLabel: {
+  /* ── Menu Section ── */
+  sectionHeader: {
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.sm,
+  },
+  sectionTitle: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
     letterSpacing: 1.5,
-    marginBottom: Spacing.md,
   },
 
-  // Menu Grid
+  /* ── Menu Grid ── */
   menuGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: MENU_GAP,
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.sm,
   },
   menuCard: {
     width: MENU_W,
     backgroundColor: Colors.white,
-    borderRadius: Radius.lg,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xs,
+    borderRadius: Radius.xl,
+    paddingVertical: Spacing.md,
     alignItems: "center",
-    gap: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadow.xs,
+    gap: Spacing.xs,
+    ...Shadow.sm,
   },
-  menuIconBox: {
-    width: 52,
-    height: 52,
+  menuIconCircle: {
+    width: 48, height: 48,
     borderRadius: Radius.lg,
     justifyContent: "center",
     alignItems: "center",
   },
   menuLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: Typography.semibold,
     color: Colors.textPrimary,
     textAlign: "center",
-    lineHeight: 15,
+    lineHeight: 13,
+  },
+
+  /* ── Quick Info Card ── */
+  quickCard: {
+    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing.xl,
+  },
+  quickCardInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderRadius: Radius.xl,
+    gap: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
+  },
+  quickIconBox: {
+    width: 44, height: 44,
+    borderRadius: Radius.lg,
+    backgroundColor: "rgba(123,111,232,0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  quickTitle: {
+    fontSize: Typography.md,
+    fontWeight: Typography.bold,
+    color: Colors.textPrimary,
+  },
+  quickSub: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
 });

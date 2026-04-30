@@ -20,8 +20,6 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
       "package": "com.pmmkn.pmmobile"
     },
     "web": {
@@ -32,6 +30,10 @@
       "eas": {
         "projectId": "24f8e1b8-be2c-4446-8d27-31003a2fb844"
       }
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      "expo-font"
+    ]
   }
 }

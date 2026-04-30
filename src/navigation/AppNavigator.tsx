@@ -7,6 +7,10 @@ import { useAuth } from "../context/AuthContext";
 import LoginScreen from "../screens/LoginScreen";
 import DashboardScreen from "../screens/DashboardScreen";
 import CallRecordsScreen from "../screens/CallRecordsScreen";
+import KpiScreen from "../screens/KpiScreen";
+import RadioScreen from "../screens/RadioScreen";
+import NecSignalScreen from "../screens/NecSignalScreen";
+import SwrScreen from "../screens/SwrScreen";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
 
 const Stack = createNativeStackNavigator();
@@ -37,13 +41,13 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
             <Stack.Screen name="CallRecords" component={CallRecordsScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Radio" component={PlaceholderScreen} options={{ title: "Radio" }} />
-            <Stack.Screen name="NecSignal" component={PlaceholderScreen} options={{ title: "NEC Signal" }} />
-            <Stack.Screen name="Swr" component={PlaceholderScreen} options={{ title: "SWR" }} />
+            <Stack.Screen name="Radio" component={RadioScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="NecSignal" component={NecSignalScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Swr" component={SwrScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Kpi" component={KpiScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Surat" component={PlaceholderScreen} options={{ title: "Surat" }} />
             <Stack.Screen name="Inspeksi" component={PlaceholderScreen} options={{ title: "Inspeksi KPC" }} />
             <Stack.Screen name="InternalLink" component={PlaceholderScreen} options={{ title: "Internal Link" }} />
-            <Stack.Screen name="Kpi" component={PlaceholderScreen} options={{ title: "KPI" }} />
           </>
         )}
       </Stack.Navigator>

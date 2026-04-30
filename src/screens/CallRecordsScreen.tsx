@@ -150,43 +150,51 @@ export default function CallRecordsScreen({ navigation }: any) {
         <LoadingState />
       ) : (
         <>
-          {/* Stat Cards */}
-          <View style={S.statsGrid}>
-            <StatCard
-              gradientColors={["#7B6FE8", "#9B8FF0"]} icon="bar-chart"
-              label="Total Calls" value={summary?.totalQty ?? 0}
-              valueColor={Colors.primary} pct={undefined}
-            />
-            <StatCard
-              gradientColors={["#FF6B6B", "#FF9A9A"]} icon="close-circle"
-              label="TE Busy" value={summary?.totalTEBusy ?? 0}
-              valueColor={Colors.error} pct={summary?.avgTEBusyPercent}
-            />
-            <StatCard
-              gradientColors={["#FFB800", "#FFD45C"]} icon="alert-circle"
-              label="Sys Busy" value={summary?.totalSysBusy ?? 0}
-              valueColor={Colors.warning} pct={summary?.avgSysBusyPercent}
-            />
-            <StatCard
-              gradientColors={["#00C48C", "#4DD9C0"]} icon="ellipsis-horizontal-circle"
-              label="Others" value={summary?.totalOthers ?? 0}
-              valueColor={Colors.success} pct={summary?.avgOthersPercent}
-            />
+          {/* Big Total Calls Card */}
+          <View style={[S.card, { alignItems: 'center', paddingVertical: Spacing.xl, ...Shadow.md }]}>
+            <View style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 8 }}>
+              <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '600' }}>Total Calls Today</Text>
+            </View>
+            <Text style={{ fontSize: 42, fontWeight: '900', color: '#0F172A', letterSpacing: -1 }}>
+              {(summary?.totalQty ?? 0).toLocaleString()}
+            </Text>
           </View>
 
           {/* Bar Chart */}
           <View style={S.card}>
             <View style={S.cardHeader}>
-              <View style={S.cardTitleRow}>
-                <Ionicons name="bar-chart-outline" size={16} color={Colors.primary} />
-                <Text style={S.cardTitle}>Distribusi Per Jam</Text>
-              </View>
+              <Text style={[S.cardTitle, { fontSize: 16 }]}>Overview</Text>
               <View style={S.chip}>
-                <Text style={S.chipText}>24 Jam</Text>
+                <Text style={S.chipText}>Month</Text>
+                <Ionicons name="chevron-down" size={12} color={Colors.textMuted} style={{ marginLeft: 4 }} />
               </View>
             </View>
             <BarChart data={chartData} height={150} />
           </View>
+
+          {/* TE Busy & Sys Busy Dual Cards */}
+          <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md }}>
+            <LinearGradient
+              colors={["#312E81", "#1E1B4B"]}
+              style={{ flex: 1, borderRadius: 16, padding: Spacing.md, ...Shadow.md }}
+            >
+              <Ionicons name="arrow-down" size={18} color="#A5B4FC" style={{ marginBottom: 12 }} />
+              <Text style={{ color: '#A5B4FC', fontSize: 12, fontWeight: '600', marginBottom: 4 }}>TE Busy</Text>
+              <Text style={{ color: 'white', fontSize: 28, fontWeight: 'bold' }}>{(summary?.totalTEBusy ?? 0).toLocaleString()}</Text>
+              <Ionicons name="arrow-up-right" size={48} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', bottom: -10, right: -10 }} />
+            </LinearGradient>
+            <LinearGradient
+              colors={["#8B5CF6", "#7C3AED"]}
+              style={{ flex: 1, borderRadius: 16, padding: Spacing.md, ...Shadow.md }}
+            >
+              <Ionicons name="arrow-up" size={18} color="#EAE8FC" style={{ marginBottom: 12 }} />
+              <Text style={{ color: '#EAE8FC', fontSize: 12, fontWeight: '600', marginBottom: 4 }}>Sys Busy</Text>
+              <Text style={{ color: 'white', fontSize: 28, fontWeight: 'bold' }}>{(summary?.totalSysBusy ?? 0).toLocaleString()}</Text>
+              <Ionicons name="arrow-up-right" size={48} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', bottom: -10, right: -10 }} />
+            </LinearGradient>
+          </View>
+
+
 
           {/* Percent Bars */}
           <View style={S.card}>
